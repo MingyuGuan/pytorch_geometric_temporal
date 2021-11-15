@@ -4,10 +4,11 @@ import torch
 import torch.nn.functional as F
 from torch_geometric_temporal.nn.recurrent import GConvGRU
 
-from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader
+from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, WindmillOutputSmallDatasetLoader,WindmillOutputMediumDatasetLoader,WindmillOutputLargeDatasetLoader
 from torch_geometric_temporal.signal import temporal_signal_split
 
-loader = ChickenpoxDatasetLoader()
+# loader = ChickenpoxDatasetLoader()
+loader = WindmillOutputLargeDatasetLoader()
 
 dataset = loader.get_dataset()
 
@@ -25,13 +26,13 @@ class RecurrentGCN(torch.nn.Module):
         h = self.linear(h)
         return h
         
-model = RecurrentGCN(node_features = 4)
+model = RecurrentGCN(node_features = 8)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 model.train()
 
-for epoch in tqdm(range(200)):
+for epoch in tqdm(range(10)):
     cost = 0
     for time, snapshot in enumerate(train_dataset):
         y_hat = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
