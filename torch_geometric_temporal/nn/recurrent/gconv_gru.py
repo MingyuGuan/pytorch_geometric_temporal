@@ -1,5 +1,6 @@
 import torch
-from torch_geometric.nn import ChebConv
+# from torch_geometric.nn import ChebConv
+from .conv_layers import ChebConv
 
 
 class GConvGRU(torch.nn.Module):
