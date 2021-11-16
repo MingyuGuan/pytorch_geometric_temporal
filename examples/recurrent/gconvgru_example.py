@@ -8,7 +8,7 @@ from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, WindmillOu
 from torch_geometric_temporal.signal import temporal_signal_split
 
 # loader = ChickenpoxDatasetLoader()
-loader = WindmillOutputLargeDatasetLoader()
+loader = WindmillOutputSmallDatasetLoader()
 
 dataset = loader.get_dataset()
 
