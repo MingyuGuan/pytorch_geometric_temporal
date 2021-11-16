@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Parameter
-# from torch_geometric.nn import SageConv
-from conv_layers import SageConv
+# from torch_geometric.nn import SAGEConv
+from conv_layers import SAGEConv
 from torch_geometric.nn.inits import glorot, zeros
 
 
@@ -54,13 +54,13 @@ class GCNConvLSTM(torch.nn.Module):
 
     def _create_input_gate_parameters_and_layers(self):
 
-        self.conv_x_i = SageConv(
+        self.conv_x_i = SAGEConv(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             bias=self.bias,
         )
 
-        self.conv_h_i = SageConv(
+        self.conv_h_i = SAGEConv(
             in_channels=self.out_channels,
             out_channels=self.out_channels,
             bias=self.bias,
@@ -71,13 +71,13 @@ class GCNConvLSTM(torch.nn.Module):
 
     def _create_forget_gate_parameters_and_layers(self):
 
-        self.conv_x_f = SageConv(
+        self.conv_x_f = SAGEConv(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             bias=self.bias,
         )
 
-        self.conv_h_f = SageConv(
+        self.conv_h_f = SAGEConv(
             in_channels=self.out_channels,
             out_channels=self.out_channels,
             bias=self.bias,
@@ -88,13 +88,13 @@ class GCNConvLSTM(torch.nn.Module):
 
     def _create_cell_state_parameters_and_layers(self):
 
-        self.conv_x_c = SageConv(
+        self.conv_x_c = SAGEConv(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             bias=self.bias,
         )
 
-        self.conv_h_c = SageConv(
+        self.conv_h_c = SAGEConv(
             in_channels=self.out_channels,
             out_channels=self.out_channels,
             bias=self.bias,
@@ -104,13 +104,13 @@ class GCNConvLSTM(torch.nn.Module):
 
     def _create_output_gate_parameters_and_layers(self):
 
-        self.conv_x_o = SageConv(
+        self.conv_x_o = SAGEConv(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             bias=self.bias,
         )
 
-        self.conv_h_o = SageConv(
+        self.conv_h_o = SAGEConv(
             in_channels=self.out_channels,
             out_channels=self.out_channels,
             bias=self.bias,
