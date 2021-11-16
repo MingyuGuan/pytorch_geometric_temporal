@@ -49,6 +49,7 @@ for epoch in tqdm(range(5)):
 model.eval()
 cost = 0
 for time, snapshot in enumerate(test_dataset):
+    snapshot.to(device)
     y_hat, h, c = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr, h, c)
     cost = cost + torch.mean((y_hat-snapshot.y)**2)
 cost = cost / (time+1)
