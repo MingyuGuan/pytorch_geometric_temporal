@@ -179,11 +179,13 @@ class GCNConv(MessagePassing):
                 else:
                     edge_index = cache
 
-        x = self.lin(x)
+        # x = self.lin(x)
 
         # propagate_type: (x: Tensor, edge_weight: OptTensor)
         out = self.propagate(edge_index, x=x, edge_weight=edge_weight,
                              size=None)
+
+        out = self.lin(out)
 
         if self.bias is not None:
             out += self.bias

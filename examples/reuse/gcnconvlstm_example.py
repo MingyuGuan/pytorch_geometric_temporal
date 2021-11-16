@@ -7,12 +7,17 @@ from temporal_gnns import GCNConvLSTM
 from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, WindmillOutputSmallDatasetLoader,WindmillOutputMediumDatasetLoader,WindmillOutputLargeDatasetLoader
 from torch_geometric_temporal.signal import temporal_signal_split
 
+device = torch.device('cuda')
+
 # loader = ChickenpoxDatasetLoader()
 loader = WindmillOutputLargeDatasetLoader()
 
 dataset = loader.get_dataset()
 
 train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.2)
+
+train_dataset.to(device)
+test_dataset.to(device)
 
 class RecurrentGCN(torch.nn.Module):
     def __init__(self, node_features):
@@ -26,7 +31,7 @@ class RecurrentGCN(torch.nn.Module):
         h = self.linear(h)
         return h, h_0, c_0
         
-model = RecurrentGCN(node_features=8)
+model = RecurrentGCN(node_features=8).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
