@@ -1,7 +1,5 @@
 from .gconv_gru import GConvGRU
 from .gconv_lstm import GConvLSTM
-from .gcnconv_gru import GCNConvGRU
-from .gcnconv_lstm import GCNConvLSTM
 from .lrgcn import LRGCN
 from .gc_lstm import GCLSTM
 from .dygrae import DyGrEncoder

@@ -1,6 +1,6 @@
 import torch
 # from torch_geometric.nn import GCNConv
-from .conv_layers import GCNConv
+from ..conv_layers import GCNConv
 
 
 class GCNConvGRU(torch.nn.Module):
