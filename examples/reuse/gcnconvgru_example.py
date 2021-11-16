@@ -32,7 +32,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 model.train()
 
-for epoch in tqdm(range(10)):
+for epoch in tqdm(range(5)):
     cost = 0
     for time, snapshot in enumerate(train_dataset):
         y_hat = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)

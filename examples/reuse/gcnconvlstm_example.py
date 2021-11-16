@@ -2,7 +2,7 @@ from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
-from .temporal_gnns import GCNConvLSTM
+from temporal_gnns import GCNConvLSTM
 
 from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, WindmillOutputSmallDatasetLoader,WindmillOutputMediumDatasetLoader,WindmillOutputLargeDatasetLoader
 from torch_geometric_temporal.signal import temporal_signal_split
@@ -17,8 +17,8 @@ train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.2)
 class RecurrentGCN(torch.nn.Module):
     def __init__(self, node_features):
         super(RecurrentGCN, self).__init__()
-        self.recurrent = GCNConvLSTM(node_features, 64)
-        self.linear = torch.nn.Linear(64, 1)
+        self.recurrent = GCNConvLSTM(node_features, 32)
+        self.linear = torch.nn.Linear(32, 1)
 
     def forward(self, x, edge_index, edge_weight, h, c):
         h_0, c_0 = self.recurrent(x, edge_index, edge_weight, h, c)
@@ -26,13 +26,13 @@ class RecurrentGCN(torch.nn.Module):
         h = self.linear(h)
         return h, h_0, c_0
         
-model = RecurrentGCN(node_features=4)
+model = RecurrentGCN(node_features=8)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 model.train()
 
-for epoch in tqdm(range(10)):
+for epoch in tqdm(range(5)):
     cost = 0
     h, c = None, None
     for time, snapshot in enumerate(train_dataset):
