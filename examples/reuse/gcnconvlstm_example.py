@@ -7,8 +7,6 @@ from temporal_gnns import GCNConvLSTM
 from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, WindmillOutputSmallDatasetLoader,WindmillOutputMediumDatasetLoader,WindmillOutputLargeDatasetLoader
 from torch_geometric_temporal.signal import temporal_signal_split
 
-import torch_geometric.transforms as T
-
 device = torch.device('cuda')
 
 # loader = ChickenpoxDatasetLoader()
@@ -40,7 +38,6 @@ for epoch in tqdm(range(5)):
     cost = 0
     h, c = None, None
     for time, snapshot in enumerate(train_dataset):
-        snapshot = T.ToSparseTensor()(snapshot)
         snapshot.to(device)
         y_hat, h, c = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr, h, c)
         cost = cost + torch.mean((y_hat-snapshot.y)**2)
@@ -52,7 +49,6 @@ for epoch in tqdm(range(5)):
 model.eval()
 cost = 0
 for time, snapshot in enumerate(test_dataset):
-    snapshot = T.ToSparseTensor()(snapshot)
     snapshot.to(device)
     y_hat, h, c = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr, h, c)
     cost = cost + torch.mean((y_hat-snapshot.y)**2)
