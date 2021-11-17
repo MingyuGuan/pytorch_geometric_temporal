@@ -7,6 +7,8 @@ from temporal_gnns import ChebConvGRU
 from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, WindmillOutputSmallDatasetLoader,WindmillOutputMediumDatasetLoader,WindmillOutputLargeDatasetLoader
 from torch_geometric_temporal.signal import temporal_signal_split
 
+device = torch.device('cuda')
+
 # loader = ChickenpoxDatasetLoader()
 loader = WindmillOutputLargeDatasetLoader()
 
@@ -17,8 +19,8 @@ train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.2)
 class RecurrentGCN(torch.nn.Module):
     def __init__(self, node_features):
         super(RecurrentGCN, self).__init__()
-        self.recurrent = ChebConvGRU(node_features, 32, 1)
-        self.linear = torch.nn.Linear(32, 1)
+        self.recurrent = ChebConvGRU(node_features, 64, 1)
+        self.linear = torch.nn.Linear(64, 1)
 
     def forward(self, x, edge_index, edge_weight):
         h = self.recurrent(x, edge_index, edge_weight)
@@ -26,7 +28,7 @@ class RecurrentGCN(torch.nn.Module):
         h = self.linear(h)
         return h
         
-model = RecurrentGCN(node_features = 8)
+model = RecurrentGCN(node_features = 8).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -35,6 +37,7 @@ model.train()
 for epoch in tqdm(range(5)):
     cost = 0
     for time, snapshot in enumerate(train_dataset):
+        snapshot.to(device)
         y_hat = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
         cost = cost + torch.mean((y_hat-snapshot.y)**2)
     cost = cost / (time+1)
@@ -45,6 +48,7 @@ for epoch in tqdm(range(5)):
 model.eval()
 cost = 0
 for time, snapshot in enumerate(test_dataset):
+    snapshot.to(device)
     y_hat = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
     cost = cost + torch.mean((y_hat-snapshot.y)**2)
 cost = cost / (time+1)
