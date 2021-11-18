@@ -150,6 +150,12 @@ class ChebConvGRU(torch.nn.Module):
         H = Z * H + (1 - Z) * H_tilde
         return H
 
+    def _calculate_x_agg(self, x, edge_index, edge_weight):
+        return self.conv_agg(x, edge_index, edge_weight)
+
+    def _calculate_h_agg(self, h, edge_index, edge_weight):
+        return self.conv_agg(h, edge_index, edge_weight)
+
     def forward(
         self,
         X: torch.FloatTensor,
