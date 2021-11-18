@@ -19,18 +19,18 @@ args = parser.parse_args()
 if args.dataset == 'CP':
     loader = ChickenpoxDatasetLoader()
     node_features = 4
-elif args.dataset == 'HAND':
-    loader = MTMDatasetLoader() 
-    node_features = 21
 elif args.dataset == 'WIKI':
     loader = WikiMathsDatasetLoader()
     node_features = 8
 elif args.dataset == "WIND":
     loader = WindmillOutputLargeDatasetLoader()
     node_features = 8
-elif args.dataset == 'BUS':
-    loader = MontevideoBusDatasetLoader() 
-    node_features = 16 # guess..
+# elif args.dataset == 'HAND':
+#     loader = MTMDatasetLoader() 
+#     node_features = 3 # failed
+# elif args.dataset == 'BUS':
+#     loader = MontevideoBusDatasetLoader() 
+#     node_features = 16 # failed
 # elif args.dataset == 'COVID':
 #     loader = MontevideoBusDatasetLoader() # Too small
 
