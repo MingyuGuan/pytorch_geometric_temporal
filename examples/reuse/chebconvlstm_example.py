@@ -9,6 +9,11 @@ from torch_geometric_temporal.signal import temporal_signal_split
 
 import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--reuse', action='store_true',
+                        help="enable optimization of resusing message passing")  
+args = parser.parse_args()
+
 device = torch.device('cuda')
 
 # loader = ChickenpoxDatasetLoader()
@@ -19,7 +24,7 @@ dataset = loader.get_dataset()
 train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.9)
 
 class RecurrentGCN(torch.nn.Module):
-    def __init__(self, node_features, reuse=False):
+    def __init__(self, node_features, reuse):
         super(RecurrentGCN, self).__init__()
         self.recurrent = ChebConvLSTM(node_features, 64, 1, reuse=reuse)
         self.linear = torch.nn.Linear(64, 1)
@@ -29,11 +34,6 @@ class RecurrentGCN(torch.nn.Module):
         h = F.relu(h_0)
         h = self.linear(h)
         return h, h_0, c_0
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--reuse', action='store_true',
-                        help="enable optimization of resusing message passing")  
-args = parser.parse_args()
 
 model = RecurrentGCN(node_features=8, reuse=args.reuse).to(device)
 
