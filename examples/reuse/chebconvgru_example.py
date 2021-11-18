@@ -16,22 +16,23 @@ parser.add_argument('--dataset', type=str, default='CP',
                         help="dataset CP for Chickenpox; HAND for MTM Hand Motions; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
 args = parser.parse_args()
 
-node_features = 4
 if args.dataset == 'CP':
     loader = ChickenpoxDatasetLoader()
     node_features = 4
 elif args.dataset == 'HAND':
     loader = MTMDatasetLoader() 
+    node_features = 4
 elif args.dataset == 'WIKI':
     loader = WikiMathsDatasetLoader()
     node_features = 8
 elif args.dataset == "WIND":
     loader = WindmillOutputLargeDatasetLoader()
     node_features = 8
-# elif args.dataset == 'BUS':
-#     loader = MontevideoBusDatasetLoader() // Cannot load successfully
+elif args.dataset == 'BUS':
+    loader = MontevideoBusDatasetLoader() 
+    node_features = 3 # guess..
 # elif args.dataset == 'COVID':
-#     loader = MontevideoBusDatasetLoader() // Too small
+#     loader = MontevideoBusDatasetLoader() # Too small
 
 dataset = loader.get_dataset()
 
