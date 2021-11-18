@@ -75,10 +75,12 @@ class ChebConv(MessagePassing):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.normalization = normalization
-        self.lins = torch.nn.ModuleList([
-            Linear(in_channels, out_channels, bias=False,
-                   weight_initializer='glorot') for _ in range(K)
-        ])
+        # self.lins = torch.nn.ModuleList([
+        #     Linear(in_channels, out_channels, bias=False,
+        #            weight_initializer='glorot') for _ in range(K)
+        # ])
+        self._K = K
+        self.lin = Linear(self._K * in_channels, out_channels, bias=False, weight_initializer='glorot')
 
         if bias:
             self.bias = Parameter(torch.Tensor(out_channels))
@@ -88,8 +90,9 @@ class ChebConv(MessagePassing):
         self.reset_parameters()
 
     def reset_parameters(self):
-        for lin in self.lins:
-            lin.reset_parameters()
+        # for lin in self.lins:
+        #     lin.reset_parameters()
+        self.lin.reset_parameters()
         zeros(self.bias)
 
 
@@ -136,20 +139,41 @@ class ChebConv(MessagePassing):
                                          lambda_max, dtype=x.dtype,
                                          batch=batch)
 
-        Tx_0 = x
-        Tx_1 = x  # Dummy.
-        out = self.lins[0](Tx_0)
+        # Tx_0 = x
+        # Tx_1 = x  # Dummy.
+        # out = self.lins[0](Tx_0)
+
+        # # propagate_type: (x: Tensor, norm: Tensor)
+        # if len(self.lins) > 1:
+        #     Tx_1 = self.propagate(edge_index, x=x, norm=norm, size=None)
+        #     out = out + self.lins[1](Tx_1)
+
+        # for lin in self.lins[2:]:
+        #     Tx_2 = self.propagate(edge_index, x=Tx_1, norm=norm, size=None)
+        #     Tx_2 = 2. * Tx_2 - Tx_0
+        #     out = out + lin.forward(Tx_2)
+        #     Tx_0, Tx_1 = Tx_1, Tx_2
+
+        ### start from DGL: ChebConv
+        Tx_t = Tx_0 = x
 
         # propagate_type: (x: Tensor, norm: Tensor)
-        if len(self.lins) > 1:
+        if self._K > 1:
             Tx_1 = self.propagate(edge_index, x=x, norm=norm, size=None)
-            out = out + self.lins[1](Tx_1)
+            # Concatenate Tx_t and Tx_1
+            Tx_t = torch.cat((Tx_t, Tx_1), 1)
 
-        for lin in self.lins[2:]:
-            Tx_2 = self.propagate(edge_index, x=Tx_1, norm=norm, size=None)
-            Tx_2 = 2. * Tx_2 - Tx_0
-            out = out + lin.forward(Tx_2)
-            Tx_0, Tx_1 = Tx_1, Tx_2
+        for _ in range(2, self._K):
+            Tx_i = self.propagate(edge_index, x=Tx_1, norm=norm, size=None)
+            Tx_i = 2. * Tx_i - Tx_0
+            # Concatenate Xt and X_i
+            Tx_t = torch.cat((Tx_t, Tx_i), 1)
+            Tx_1, Tx_0 = Tx_i, Tx_1
+
+        # linear projection
+        out = self.lin(Tx_t)
+
+        ### end from DGL: ChebConv
 
         if self.bias is not None:
             out += self.bias
