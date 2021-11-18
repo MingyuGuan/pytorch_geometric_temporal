@@ -45,6 +45,7 @@ class ChebConvLSTM(torch.nn.Module):
         K: int,
         normalization: str = "sym",
         bias: bool = True,
+        reuse: bool = False
     ):
         super(ChebConvLSTM, self).__init__()
 
@@ -53,8 +54,18 @@ class ChebConvLSTM(torch.nn.Module):
         self.K = K
         self.normalization = normalization
         self.bias = bias
+        self.reuse = reuse
         self._create_parameters_and_layers()
         self._set_parameters()
+
+        if self.reuse:
+            self._create_agg_conv()
+
+    def _create_agg_conv(self):
+        self.conv_agg = ChebConvAgg(
+            K=self.K,
+            normalization=self.normalization,
+        )
 
     def _create_input_gate_parameters_and_layers(self):
 
@@ -164,33 +175,33 @@ class ChebConvLSTM(torch.nn.Module):
             C = torch.zeros(X.shape[0], self.out_channels).to(X.device)
         return C
 
-    def _calculate_input_gate(self, X, edge_index, edge_weight, H, C):
-        I = self.conv_x_i(X, edge_index, edge_weight)
-        I = I + self.conv_h_i(H, edge_index, edge_weight)
+    def _calculate_input_gate(self, X, edge_index, edge_weight, H, C, x_agg, h_agg):
+        I = self.conv_x_i(X, edge_index, edge_weight, x_agg)
+        I = I + self.conv_h_i(H, edge_index, edge_weight, h_agg)
         I = I + (self.w_c_i * C)
         I = I + self.b_i
         I = torch.sigmoid(I)
         return I
 
-    def _calculate_forget_gate(self, X, edge_index, edge_weight, H, C):
-        F = self.conv_x_f(X, edge_index, edge_weight)
-        F = F + self.conv_h_f(H, edge_index, edge_weight)
+    def _calculate_forget_gate(self, X, edge_index, edge_weight, H, C, x_agg, h_agg):
+        F = self.conv_x_f(X, edge_index, edge_weight, x_agg)
+        F = F + self.conv_h_f(H, edge_index, edge_weight, h_agg)
         F = F + (self.w_c_f * C)
         F = F + self.b_f
         F = torch.sigmoid(F)
         return F
 
-    def _calculate_cell_state(self, X, edge_index, edge_weight, H, C, I, F):
-        T = self.conv_x_c(X, edge_index, edge_weight)
-        T = T + self.conv_h_c(H, edge_index, edge_weight)
+    def _calculate_cell_state(self, X, edge_index, edge_weight, H, C, I, F, x_agg, h_agg):
+        T = self.conv_x_c(X, edge_index, edge_weight, x_agg)
+        T = T + self.conv_h_c(H, edge_index, edge_weight, h_agg)
         T = T + self.b_c
         T = torch.tanh(T)
         C = F * C + I * T
         return C
 
-    def _calculate_output_gate(self, X, edge_index, edge_weight, H, C):
-        O = self.conv_x_o(X, edge_index, edge_weight)
-        O = O + self.conv_h_o(H, edge_index, edge_weight)
+    def _calculate_output_gate(self, X, edge_index, edge_weight, H, C, x_agg, h_agg):
+        O = self.conv_x_o(X, edge_index, edge_weight, x_agg)
+        O = O + self.conv_h_o(H, edge_index, edge_weight, h_agg)
         O = O + (self.w_c_o * C)
         O = O + self.b_o
         O = torch.sigmoid(O)
@@ -199,6 +210,12 @@ class ChebConvLSTM(torch.nn.Module):
     def _calculate_hidden_state(self, O, C):
         H = O * torch.tanh(C)
         return H
+
+    def _calculate_x_agg(self, x, edge_index, edge_weight):
+        return self.conv_agg(x, edge_index, edge_weight)
+
+    def _calculate_h_agg(self, h, edge_index, edge_weight):
+        return self.conv_agg(h, edge_index, edge_weight)
 
     def forward(
         self,
@@ -227,9 +244,16 @@ class ChebConvLSTM(torch.nn.Module):
         """
         H = self._set_hidden_state(X, H)
         C = self._set_cell_state(X, C)
-        I = self._calculate_input_gate(X, edge_index, edge_weight, H, C)
-        F = self._calculate_forget_gate(X, edge_index, edge_weight, H, C)
-        C = self._calculate_cell_state(X, edge_index, edge_weight, H, C, I, F)
-        O = self._calculate_output_gate(X, edge_index, edge_weight, H, C)
+
+        x_agg = None
+        h_agg = None
+        if self.reuse:
+            x_agg = self._calculate_x_agg(X, edge_index, edge_weight)
+            h_agg = self._calculate_h_agg(H, edge_index, edge_weight)
+
+        I = self._calculate_input_gate(X, edge_index, edge_weight, H, C, x_agg, h_agg)
+        F = self._calculate_forget_gate(X, edge_index, edge_weight, H, C, x_agg, h_agg)
+        C = self._calculate_cell_state(X, edge_index, edge_weight, H, C, I, F, x_agg, h_agg)
+        O = self._calculate_output_gate(X, edge_index, edge_weight, H, C, x_agg, h_agg)
         H = self._calculate_hidden_state(O, C)
         return H, C

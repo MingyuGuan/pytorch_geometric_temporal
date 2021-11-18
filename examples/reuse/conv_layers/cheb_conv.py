@@ -95,6 +95,98 @@ class ChebConv(MessagePassing):
         self.lin.reset_parameters()
         zeros(self.bias)
 
+    def __norm__(self, edge_index, num_nodes: Optional[int],
+                 edge_weight: OptTensor, normalization: Optional[str],
+                 lambda_max, dtype: Optional[int] = None,
+                 batch: OptTensor = None):
+
+        edge_index, edge_weight = remove_self_loops(edge_index, edge_weight)
+
+        edge_index, edge_weight = get_laplacian(edge_index, edge_weight,
+                                                normalization, dtype,
+                                                num_nodes)
+
+        if batch is not None and lambda_max.numel() > 1:
+            lambda_max = lambda_max[batch[edge_index[0]]]
+
+        edge_weight = (2.0 * edge_weight) / lambda_max
+        edge_weight.masked_fill_(edge_weight == float('inf'), 0)
+
+        edge_index, edge_weight = add_self_loops(edge_index, edge_weight,
+                                                 fill_value=-1.,
+                                                 num_nodes=num_nodes)
+        assert edge_weight is not None
+
+        return edge_index, edge_weight
+
+    def forward(self, x, edge_index, edge_weight: OptTensor = None, agg_rst: OptTensor = None,
+                batch: OptTensor = None, lambda_max: OptTensor = None):
+        """"""
+        if agg_rst is None:
+            if self.normalization != 'sym' and lambda_max is None:
+                raise ValueError('You need to pass `lambda_max` to `forward() in`'
+                                 'case the normalization is non-symmetric.')
+
+            if lambda_max is None:
+                lambda_max = torch.tensor(2.0, dtype=x.dtype, device=x.device)
+            if not isinstance(lambda_max, torch.Tensor):
+                lambda_max = torch.tensor(lambda_max, dtype=x.dtype,
+                                          device=x.device)
+            assert lambda_max is not None
+
+            edge_index, norm = self.__norm__(edge_index, x.size(self.node_dim),
+                                             edge_weight, self.normalization,
+                                             lambda_max, dtype=x.dtype,
+                                             batch=batch)
+
+            ### start from DGL: ChebConv
+            Tx_t = Tx_0 = x
+
+            # propagate_type: (x: Tensor, norm: Tensor)
+            if self._K > 1:
+                Tx_1 = self.propagate(edge_index, x=x, norm=norm, size=None)
+                # Concatenate Tx_t and Tx_1
+                Tx_t = torch.cat((Tx_t, Tx_1), 1)
+
+            for _ in range(2, self._K):
+                Tx_i = self.propagate(edge_index, x=Tx_1, norm=norm, size=None)
+                Tx_i = 2. * Tx_i - Tx_0
+                # Concatenate Xt and X_i
+                Tx_t = torch.cat((Tx_t, Tx_i), 1)
+                Tx_1, Tx_0 = Tx_i, Tx_1
+        else:
+            Tx_t = agg_rst
+
+        # linear projection
+        out = self.lin(Tx_t)
+
+        ### end from DGL: ChebConv
+
+        if self.bias is not None:
+            out += self.bias
+
+        return out
+
+    def message(self, x_j, norm):
+        return norm.view(-1, 1) * x_j
+
+    def __repr__(self):
+        return '{}({}, {}, K={}, normalization={})'.format(
+            self.__class__.__name__, self.in_channels, self.out_channels,
+            len(self.lins), self.normalization)
+
+class ChebConvAgg(MessagePassing):
+    def __init__(self, K: int,
+                 normalization: Optional[str] = 'sym',
+                 **kwargs):
+        kwargs.setdefault('aggr', 'add')
+        super(ChebConvAgg, self).__init__(**kwargs)
+
+        assert K > 0
+        assert normalization in [None, 'sym', 'rw'], 'Invalid normalization'
+
+        self.normalization = normalization
+        self._K = K
 
     def __norm__(self, edge_index, num_nodes: Optional[int],
                  edge_weight: OptTensor, normalization: Optional[str],
@@ -139,21 +231,6 @@ class ChebConv(MessagePassing):
                                          lambda_max, dtype=x.dtype,
                                          batch=batch)
 
-        # Tx_0 = x
-        # Tx_1 = x  # Dummy.
-        # out = self.lins[0](Tx_0)
-
-        # # propagate_type: (x: Tensor, norm: Tensor)
-        # if len(self.lins) > 1:
-        #     Tx_1 = self.propagate(edge_index, x=x, norm=norm, size=None)
-        #     out = out + self.lins[1](Tx_1)
-
-        # for lin in self.lins[2:]:
-        #     Tx_2 = self.propagate(edge_index, x=Tx_1, norm=norm, size=None)
-        #     Tx_2 = 2. * Tx_2 - Tx_0
-        #     out = out + lin.forward(Tx_2)
-        #     Tx_0, Tx_1 = Tx_1, Tx_2
-
         ### start from DGL: ChebConv
         Tx_t = Tx_0 = x
 
@@ -170,21 +247,8 @@ class ChebConv(MessagePassing):
             Tx_t = torch.cat((Tx_t, Tx_i), 1)
             Tx_1, Tx_0 = Tx_i, Tx_1
 
-        # linear projection
-        out = self.lin(Tx_t)
-
-        ### end from DGL: ChebConv
-
-        if self.bias is not None:
-            out += self.bias
-
-        return out
+        return Tx_t
 
 
     def message(self, x_j, norm):
         return norm.view(-1, 1) * x_j
-
-    def __repr__(self):
-        return '{}({}, {}, K={}, normalization={})'.format(
-            self.__class__.__name__, self.in_channels, self.out_channels,
-            len(self.lins), self.normalization)
