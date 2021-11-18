@@ -20,15 +20,18 @@ node_features = 4
 if args.dataset == 'CP':
     loader = ChickenpoxDatasetLoader()
     node_features = 4
-# elif args.dataset == 'COVID':
-#     loader = EnglandCovidDatasetLoader() // faster without reuse?? Too small
-elif args.dataset == 'BUS':
-    loader = MontevideoBusDatasetLoader()
+elif args.dataset == 'HAND':
+    loader = MTMDatasetLoader() 
 elif args.dataset == 'WIKI':
     loader = WikiMathsDatasetLoader()
+    node_features = 8
 elif args.dataset == "WIND":
     loader = WindmillOutputLargeDatasetLoader()
     node_features = 8
+# elif args.dataset == 'BUS':
+#     loader = MontevideoBusDatasetLoader() // Cannot load successfully
+# elif args.dataset == 'COVID':
+#     loader = MontevideoBusDatasetLoader() // Too small
 
 dataset = loader.get_dataset()
 
