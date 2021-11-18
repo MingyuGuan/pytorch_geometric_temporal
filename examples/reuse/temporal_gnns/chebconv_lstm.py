@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Parameter
 # from torch_geometric.nn import ChebConv
-from conv_layers import ChebConv
+from conv_layers import ChebConv, ChebConvAgg
 from torch_geometric.nn.inits import glorot, zeros
 
 
