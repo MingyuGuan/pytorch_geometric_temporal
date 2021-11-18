@@ -45,7 +45,7 @@ class ChebConvLSTM(torch.nn.Module):
         K: int,
         normalization: str = "sym",
         bias: bool = True,
-        reuse: bool = False
+        reuse: bool = False,
     ):
         super(ChebConvLSTM, self).__init__()
 
