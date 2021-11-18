@@ -2,7 +2,7 @@ from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
-from temporal_gnns import ChebConvGRU, ChebConvAgg
+from temporal_gnns import ChebConvGRU
 
 from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, WindmillOutputSmallDatasetLoader,WindmillOutputMediumDatasetLoader,WindmillOutputLargeDatasetLoader
 from torch_geometric_temporal.signal import temporal_signal_split
