@@ -16,16 +16,19 @@ parser.add_argument('--dataset', type=str, default='CP',
                         help="dataset CP for Chickenpox; COVID for EnglandCovid; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
 args = parser.parse_args()
 
+node_features = 4
 if args.dataset == 'CP':
     loader = ChickenpoxDatasetLoader()
-elif args.dataset == 'COVID':
-    loader = EnglandCovidDatasetLoader()
+    node_features = 4
+# elif args.dataset == 'COVID':
+#     loader = EnglandCovidDatasetLoader() // faster without reuse?? Too small
 elif args.dataset == 'BUS':
     loader = MontevideoBusDatasetLoader()
 elif args.dataset == 'WIKI':
     loader = WikiMathsDatasetLoader()
 elif args.dataset == "WIND":
     loader = WindmillOutputLargeDatasetLoader()
+    node_features = 8
 
 dataset = loader.get_dataset()
 
@@ -45,7 +48,7 @@ class RecurrentGCN(torch.nn.Module):
 
 device = torch.device('cuda')
 
-model = RecurrentGCN(node_features = 8, reuse=args.reuse).to(device)
+model = RecurrentGCN(node_features = node_features, reuse=args.reuse).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
