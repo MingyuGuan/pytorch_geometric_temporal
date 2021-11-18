@@ -4,20 +4,28 @@ import torch
 import torch.nn.functional as F
 from temporal_gnns import ChebConvLSTM
 
-from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, WindmillOutputSmallDatasetLoader,WindmillOutputMediumDatasetLoader,WindmillOutputLargeDatasetLoader
+from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, EnglandCovidDatasetLoader, MontevideoBusDatasetLoader, WikiMathsDatasetLoader, WindmillOutputLargeDatasetLoader
 from torch_geometric_temporal.signal import temporal_signal_split
 
 import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--reuse', action='store_true',
-                        help="enable optimization of resusing message passing")  
+                        help="enable optimization of resusing message passing") 
+parser.add_argument('--dataset', type=str, default='CP',
+                        help="dataset CP for Chickenpox; COVID for EnglandCovid; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
 args = parser.parse_args()
 
-device = torch.device('cuda')
-
-# loader = ChickenpoxDatasetLoader()
-loader = WindmillOutputLargeDatasetLoader()
+if args.dataset == 'CP':
+    loader = ChickenpoxDatasetLoader()
+elif args.dataset == 'COVID':
+    loader = EnglandCovidDatasetLoader()
+elif args.dataset == 'BUS':
+    loader = MontevideoBusDatasetLoader()
+elif args.dataset == 'WIKI':
+    loader = WikiMathsDatasetLoader()
+elif args.dataset == "WIND":
+    loader = WindmillOutputLargeDatasetLoader()
 
 dataset = loader.get_dataset()
 
@@ -34,6 +42,8 @@ class RecurrentGCN(torch.nn.Module):
         h = F.relu(h_0)
         h = self.linear(h)
         return h, h_0, c_0
+
+device = torch.device('cuda')
 
 model = RecurrentGCN(node_features=8, reuse=args.reuse).to(device)
 
