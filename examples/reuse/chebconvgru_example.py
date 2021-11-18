@@ -21,7 +21,7 @@ if args.dataset == 'CP':
     node_features = 4
 elif args.dataset == 'HAND':
     loader = MTMDatasetLoader() 
-    node_features = 4
+    node_features = 21
 elif args.dataset == 'WIKI':
     loader = WikiMathsDatasetLoader()
     node_features = 8
@@ -30,7 +30,7 @@ elif args.dataset == "WIND":
     node_features = 8
 elif args.dataset == 'BUS':
     loader = MontevideoBusDatasetLoader() 
-    node_features = 3 # guess..
+    node_features = 16 # guess..
 # elif args.dataset == 'COVID':
 #     loader = MontevideoBusDatasetLoader() # Too small
 
