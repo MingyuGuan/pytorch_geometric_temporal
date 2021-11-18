@@ -1,6 +1,6 @@
 import torch
 # from torch_geometric.nn import ChebConv
-from conv_layers import ChebConv
+from conv_layers import ChebConv, ChebConvAgg
 
 
 class ChebConvGRU(torch.nn.Module):
@@ -43,6 +43,7 @@ class ChebConvGRU(torch.nn.Module):
         K: int,
         normalization: str = "sym",
         bias: bool = True,
+        reuse: bool = False,
     ):
         super(ChebConvGRU, self).__init__()
 
@@ -52,6 +53,15 @@ class ChebConvGRU(torch.nn.Module):
         self.normalization = normalization
         self.bias = bias
         self._create_parameters_and_layers()
+
+        if self.reuse:
+            self._create_agg_conv()
+
+    def _create_agg_conv(self):
+        self.conv_agg = ChebConvAgg(
+            K=self.K,
+            normalization=self.normalization,
+        )
 
     def _create_update_gate_parameters_and_layers(self):
 
@@ -117,20 +127,20 @@ class ChebConvGRU(torch.nn.Module):
             H = torch.zeros(X.shape[0], self.out_channels).to(X.device)
         return H
 
-    def _calculate_update_gate(self, X, edge_index, edge_weight, H):
-        Z = self.conv_x_z(X, edge_index, edge_weight)
-        Z = Z + self.conv_h_z(H, edge_index, edge_weight)
+    def _calculate_update_gate(self, X, edge_index, edge_weight, H, x_agg, h_agg):
+        Z = self.conv_x_z(X, edge_index, edge_weight, x_agg)
+        Z = Z + self.conv_h_z(H, edge_index, edge_weight, h_agg)
         Z = torch.sigmoid(Z)
         return Z
 
-    def _calculate_reset_gate(self, X, edge_index, edge_weight, H):
-        R = self.conv_x_r(X, edge_index, edge_weight)
-        R = R + self.conv_h_r(H, edge_index, edge_weight)
+    def _calculate_reset_gate(self, X, edge_index, edge_weight, H, x_agg, h_agg):
+        R = self.conv_x_r(X, edge_index, edge_weight, x_agg)
+        R = R + self.conv_h_r(H, edge_index, edge_weight, h_agg)
         R = torch.sigmoid(R)
         return R
 
-    def _calculate_candidate_state(self, X, edge_index, edge_weight, H, R):
-        H_tilde = self.conv_x_h(X, edge_index, edge_weight)
+    def _calculate_candidate_state(self, X, edge_index, edge_weight, H, R, x_agg):
+        H_tilde = self.conv_x_h(X, edge_index, edge_weight, x_agg)
         H_tilde = H_tilde + self.conv_h_h(H * R, edge_index, edge_weight)
         H_tilde = torch.tanh(H_tilde)
         return H_tilde
@@ -161,8 +171,15 @@ class ChebConvGRU(torch.nn.Module):
             * **H** *(PyTorch Float Tensor)* - Hidden state matrix for all nodes.
         """
         H = self._set_hidden_state(X, H)
-        Z = self._calculate_update_gate(X, edge_index, edge_weight, H)
-        R = self._calculate_reset_gate(X, edge_index, edge_weight, H)
-        H_tilde = self._calculate_candidate_state(X, edge_index, edge_weight, H, R)
+
+        x_agg = None
+        h_agg = None
+        if self.reuse:
+            x_agg = self._calculate_x_agg(X, edge_index, edge_weight)
+            h_agg = self._calculate_h_agg(H, edge_index, edge_weight)
+
+        Z = self._calculate_update_gate(X, edge_index, edge_weight, H, x_agg, h_agg)
+        R = self._calculate_reset_gate(X, edge_index, edge_weight, H, x_agg, h_agg)
+        H_tilde = self._calculate_candidate_state(X, edge_index, edge_weight, H, R, x_agg)
         H = self._calculate_hidden_state(Z, H, H_tilde)
         return H
