@@ -14,24 +14,27 @@ parser.add_argument('--reuse', action='store_true',
                         help="enable optimization of resusing message passing") 
 parser.add_argument('--dataset', type=str, default='CP',
                         help="dataset CP for Chickenpox; HAND for MTM Hand Motions; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
-parser.add_argument('--in-feats', type=int, default=4,
-                        help="num of node features")
 args = parser.parse_args()
 
 if args.dataset == 'CP':
     loader = ChickenpoxDatasetLoader()
+    node_features = 4
 elif args.dataset == 'WIKI':
     loader = WikiMathsDatasetLoader()
+    node_features = 16
 elif args.dataset == "WIND":
     loader = WindmillOutputLargeDatasetLoader()
+    node_features = 8
 # elif args.dataset == 'HAND':
-#     loader = MTMDatasetLoader() # failed
+#     loader = MTMDatasetLoader() 
+#     node_features = 3 # failed
 # elif args.dataset == 'BUS':
-#     loader = MontevideoBusDatasetLoader() # failed
+#     loader = MontevideoBusDatasetLoader() 
+#     node_features = 16 # failed
 # elif args.dataset == 'COVID':
 #     loader = MontevideoBusDatasetLoader() # Too small
 
-dataset = loader.get_dataset(lags=args.in_feats)
+dataset = loader.get_dataset()
 
 train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.9)
 
@@ -49,7 +52,7 @@ class RecurrentGCN(torch.nn.Module):
 
 device = torch.device('cuda')
 
-model = RecurrentGCN(node_features=args.in_feats, reuse=args.reuse).to(device)
+model = RecurrentGCN(node_features = node_features, reuse=args.reuse).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
