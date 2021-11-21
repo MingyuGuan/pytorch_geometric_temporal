@@ -14,6 +14,7 @@ parser.add_argument('--reuse', action='store_true',
                         help="enable optimization of resusing message passing") 
 parser.add_argument('--dataset', type=str, default='CP',
                         help="dataset CP for Chickenpox; COVID for EnglandCovid; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
+parser.add_argument('--in-feats', type=int, default=4, help="num of node features")
 args = parser.parse_args()
 
 if args.dataset == 'CP':
@@ -34,7 +35,7 @@ elif args.dataset == "WIND":
 # elif args.dataset == 'COVID':
 #     loader = MontevideoBusDatasetLoader() # Too small
 
-dataset = loader.get_dataset()
+dataset = loader.get_dataset(lags=args.in_feats)
 
 train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.9)
 
@@ -52,7 +53,7 @@ class RecurrentGCN(torch.nn.Module):
 
 device = torch.device('cuda')
 
-model = RecurrentGCN(node_features=node_features, reuse=args.reuse).to(device)
+model = RecurrentGCN(node_features=agrs.in_feats, reuse=args.reuse).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
