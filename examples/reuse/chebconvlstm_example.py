@@ -15,6 +15,7 @@ parser.add_argument('--reuse', action='store_true',
 parser.add_argument('--dataset', type=str, default='CP',
                         help="dataset CP for Chickenpox; COVID for EnglandCovid; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
 parser.add_argument('--in-feats', type=int, default=4, help="num of node features")
+parser.add_argument('--epochs', type=int, default=4, help="num of epochs")
 args = parser.parse_args()
 
 if args.dataset == 'CP':
@@ -59,7 +60,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 model.train()
 
-for epoch in tqdm(range(5)):
+for epoch in tqdm(range(args.epochs)):
     cost = 0
     h, c = None, None
     for time, snapshot in enumerate(train_dataset):
