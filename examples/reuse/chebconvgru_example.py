@@ -56,13 +56,12 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 model.train()
 
-for epoch in tqdm(range(5)):
+for epoch in tqdm(range(10)):
     cost = 0
     for time, snapshot in enumerate(train_dataset):
         snapshot.to(device)
         y_hat = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
         cost = cost + torch.mean((y_hat-snapshot.y)**2)
-    print("Time:", time)
     cost = cost / (time+1)
     cost.backward()
     optimizer.step()
