@@ -63,7 +63,7 @@ for epoch in tqdm(range(args.epochs)):
     cost = 0
     for time, snapshot in enumerate(train_dataset):
         if args.rep > 1:
-            snapshot = Batch.from_data_list([Data(x=snapshot.x, edge_index=snapshot.edge_index, edge_attr=snapshot.edge_attr) for i in range(args.rep)])
+            snapshot = Batch.from_data_list([Data(x=snapshot.x, edge_index=snapshot.edge_index, edge_attr=snapshot.edge_attr, y=snapshot.y) for i in range(args.rep)])
         snapshot.to(device)
         y_hat = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
         cost = cost + torch.mean((y_hat-snapshot.y)**2)
