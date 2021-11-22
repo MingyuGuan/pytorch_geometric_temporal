@@ -8,6 +8,7 @@ from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, EnglandCov
 from torch_geometric_temporal.signal import temporal_signal_split
 
 import argparse
+from torch_geometric.data import Data, Batch
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--reuse', action='store_true',
@@ -16,6 +17,7 @@ parser.add_argument('--dataset', type=str, default='CP',
                         help="dataset CP for Chickenpox; COVID for EnglandCovid; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
 parser.add_argument('--in-feats', type=int, default=4, help="num of node features")
 parser.add_argument('--epochs', type=int, default=10, help="num of epochs")
+parser.add_argument('--rep', type=int, default=1, help="Relicate nodes for scalability test; 1 for original dataset")
 args = parser.parse_args()
 
 if args.dataset == 'CP':
@@ -54,7 +56,7 @@ class RecurrentGCN(torch.nn.Module):
 
 device = torch.device('cuda')
 
-model = RecurrentGCN(node_features=agrs.in_feats, reuse=args.reuse).to(device)
+model = RecurrentGCN(node_features=args.in_feats, reuse=args.reuse).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
@@ -64,6 +66,8 @@ for epoch in tqdm(range(args.epochs)):
     cost = 0
     h, c = None, None
     for time, snapshot in enumerate(train_dataset):
+        if args.rep > 1:
+            snapshot = Batch.from_data_list([Data(x=snapshot.x, edge_index=snapshot.edge_index, edge_attr=snapshot.edge_attr, y=snapshot.y) for i in range(args.rep)])
         snapshot.to(device)
         y_hat, h, c = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr, h, c)
         cost = cost + torch.mean((y_hat-snapshot.y)**2)
@@ -75,6 +79,8 @@ for epoch in tqdm(range(args.epochs)):
 model.eval()
 cost = 0
 for time, snapshot in enumerate(test_dataset):
+    if args.rep > 1:
+        xsnapshot = Batch.from_data_list([Data(x=snapshot.x, edge_index=snapshot.edge_index, edge_attr=snapshot.edge_attr, y=snapshot.y) for i in range(args.rep)])
     snapshot.to(device)
     y_hat, h, c = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr, h, c)
     cost = cost + torch.mean((y_hat-snapshot.y)**2)
