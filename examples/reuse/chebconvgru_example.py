@@ -8,6 +8,7 @@ from torch_geometric_temporal.dataset import ChickenpoxDatasetLoader, MTMDataset
 from torch_geometric_temporal.signal import temporal_signal_split
 
 import argparse
+from torch_geometric.data import Data, Batch
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--reuse', action='store_true',
@@ -16,6 +17,7 @@ parser.add_argument('--dataset', type=str, default='CP',
                         help="dataset CP for Chickenpox; HAND for MTM Hand Motions; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
 parser.add_argument('--in-feats', type=int, default=4, help="num of node features")
 parser.add_argument('--epochs', type=int, default=10, help="num of epochs")
+parser.add_argument('--rep', type=int, default=1, help="Relicate nodes for scalability test; 1 for original dataset")
 args = parser.parse_args()
 
 if args.dataset == 'CP':
@@ -60,6 +62,8 @@ model.train()
 for epoch in tqdm(range(args.epochs)):
     cost = 0
     for time, snapshot in enumerate(train_dataset):
+        if agrs.rep > 1:
+            snapshot = Batch.from_data_list([Data(x=snapshot.x, edge_index=snapshot.edge_index, edge_attr=snapshot.edge_attr) * args.rep])
         snapshot.to(device)
         y_hat = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
         cost = cost + torch.mean((y_hat-snapshot.y)**2)
