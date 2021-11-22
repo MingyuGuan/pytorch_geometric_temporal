@@ -62,7 +62,7 @@ model.train()
 for epoch in tqdm(range(args.epochs)):
     cost = 0
     for time, snapshot in enumerate(train_dataset):
-        if agrs.rep > 1:
+        if args.rep > 1:
             snapshot = Batch.from_data_list([Data(x=snapshot.x, edge_index=snapshot.edge_index, edge_attr=snapshot.edge_attr) * args.rep])
         snapshot.to(device)
         y_hat = model(snapshot.x, snapshot.edge_index, snapshot.edge_attr)
