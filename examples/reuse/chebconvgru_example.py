@@ -44,7 +44,7 @@ class RecurrentGCN(torch.nn.Module):
     def __init__(self, node_features, num_layers, reuse):
         super(RecurrentGCN, self).__init__()
         self.num_layers = num_layers
-        self.layers = nn.ModuleList()
+        self.layers = torch.nn.ModuleList()
         self.layers.append(ChebConvGRU(node_features, 64, 1, reuse=reuse))
         for _ in range(self.num_layers-1):
             self.layers.append(ChebConvGRU(64, 64, 1, reuse=reuse))
