@@ -18,6 +18,7 @@ parser.add_argument('--dataset', type=str, default='CP',
 parser.add_argument('--in-feats', type=int, default=8, help="num of node features")
 parser.add_argument('--epochs', type=int, default=10, help="num of epochs")
 parser.add_argument('--rep', type=int, default=1, help="Relicate nodes for scalability test; 1 for original dataset")
+parser.add_argument('--num-layers', type=int, default=1, help="number of GNN-RNN layers")
 args = parser.parse_args()
 
 if args.dataset == 'CP':
@@ -43,9 +44,14 @@ dataset = loader.get_dataset(lags=args.in_feats)
 train_dataset, test_dataset = temporal_signal_split(dataset, train_ratio=0.9)
 
 class RecurrentGCN(torch.nn.Module):
-    def __init__(self, node_features, reuse):
+    def __init__(self, node_features, num_layers, reuse):
         super(RecurrentGCN, self).__init__()
-        self.recurrent = ChebConvLSTM(node_features, 64, 1, reuse=reuse)
+        self.num_layers = num_layers
+        self.layers = torch.nn.ModuleList()
+        self.layers.append(ChebConvLSTM(node_features, 64, 1, reuse=reuse))
+        for _ in range(self.num_layers-1):
+            self.layers.append(ChebConvLSTM(64, 64, 1, reuse=reuse))
+        # self.recurrent = ChebConvLSTM(node_features, 64, 1, reuse=reuse)
         self.linear = torch.nn.Linear(64, 1)
 
     def forward(self, x, edge_index, edge_weight, h, c):
@@ -56,7 +62,7 @@ class RecurrentGCN(torch.nn.Module):
 
 device = torch.device('cuda')
 
-model = RecurrentGCN(node_features=args.in_feats, reuse=args.reuse).to(device)
+model = RecurrentGCN(node_features=args.in_feats, num_layers=args.num_layers, reuse=args.reuse).to(device)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
