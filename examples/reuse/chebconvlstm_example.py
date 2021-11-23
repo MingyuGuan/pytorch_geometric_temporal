@@ -15,7 +15,7 @@ parser.add_argument('--reuse', action='store_true',
                         help="enable optimization of resusing message passing") 
 parser.add_argument('--dataset', type=str, default='CP',
                         help="dataset CP for Chickenpox; COVID for EnglandCovid; BUS for MontevideoBus; WIKI for WikiMaths; WIND for WindmillOutputLarge") 
-parser.add_argument('--in-feats', type=int, default=4, help="num of node features")
+parser.add_argument('--in-feats', type=int, default=8, help="num of node features")
 parser.add_argument('--epochs', type=int, default=10, help="num of epochs")
 parser.add_argument('--rep', type=int, default=1, help="Relicate nodes for scalability test; 1 for original dataset")
 args = parser.parse_args()
