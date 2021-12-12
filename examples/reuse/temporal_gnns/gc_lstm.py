@@ -53,6 +53,7 @@ class GCLSTM(torch.nn.Module):
         self.K = K
         self.normalization = normalization
         self.bias = bias
+        self.reuse = reuse
         self._create_parameters_and_layers()
         self._set_parameters()
         if self.reuse:
